@@ -4,7 +4,6 @@ from datetime import date, time
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-MAXVAR = 0
 
 def read_file(filename: str) -> Dict:
     """
@@ -64,95 +63,3 @@ def preprocess_parameters(params: Dict) -> Tuple[str, int, int, List[str]]:
     blocks = compute_blocks(params["start_time"], params["end_time"])
     participants = params["participants"]
     return name, days, blocks, participants
-
-def to_var(sign: int, local: int, visit: int, day: int, block: int) -> int:
-    return sign * (local + visit * MAXVAR + day * MAXVAR ** 2 + block * MAXVAR ** 3)
-
-
-def generate_all_vs_all_clauses(days: int, blocks: int, participants: int):
-
-    clauses = []
-    for i in range(1, participants+1):
-        for j in range(1, participants+1):
-            if i != j:
-                clause = []
-                for d in range(days):
-                    for b in range(blocks):
-                        clause.append(to_var(1, i, j, d, b))
-                clauses.append(clause)
-    
-    return clauses
-
-def generate_non_rep_clauses(days: int, blocks: int, participants: int):
-
-    clauses = []
-    for i in range(1, participants+1):
-        for j in range(1, participants+1):
-            if i != j:
-                for d in range(days):
-                    for b in range(blocks):
-                        v = to_var(-1, i, j, d, b)
-                        for d2 in range(days):
-                            if d != d2:
-                                for b2 in range(blocks):
-                                    clauses.append([v, to_var(-1, i, j, d2, b2)])
-    return clauses
-
-def generate_one_per_day_clauses(days: int, blocks: int, participants: int):
-
-    clauses = []
-    for i in range(1, participants+1):
-        for j in range(1, participants+1):
-            if i != j:
-                for d in range(days):
-                    for b in range(blocks):
-                        v = to_var(-1, i, j, d, b)
-                        for j2 in range(1, participants + 1):
-                            if j2 != i:
-                                for b2 in range(blocks):
-                                    clauses.append([v, to_var(-1, i, j2, d, b2)])
-                                    clauses.append([v, to_var(-1, j2, i, d, b2)])
-    return clauses
-
-def generate_non_type_rep_clauses(days: int, blocks: int, participants: int):
-
-    clauses = []
-    for i in range(1, participants+1):
-        for j in range(1, participants+1):
-            if i != j:
-                for d in range(days):
-                    for b in range(blocks):
-                        v = to_var(-1, i, j, d, b)
-                        for j2 in range(1, participants + 1):
-                            if i != j2:
-                                for b2 in range(days):
-                                    clauses.append([v, to_var(-1, i, j2, d+1, b2)])
-                        for i2 in range(1, participants + 1):
-                            if i2 != j:
-                                for b2 in range(days):
-                                    clauses.append([v, to_var(-1, i2, j, d+1, b2)])
-    return clauses
-
-def generate_not_same_time_clauses(days: int, blocks: int, participants: int):
-
-    clauses = []
-    for i in range(1, participants+1):
-        for j in range(1, participants+1):
-            if i != j:
-                for d in range(days):
-                    for b in range(blocks):
-                        v = to_var(-1, i, j, d, b)
-                        for i2 in range(1, participants + 1):
-                            for j2 in range(1, participants + 1):
-                                if i != i2 or j != j2:
-                                    clauses.append([v, to_var(-1, i2, j2, d, b)])
-    return clauses
-
-def generate_clauses(days: int, blocks: int, participants: int):
-
-    MAXVAR = days * blocks * participants * (participants - 1)
-    clauses = []
-    clauses.extend(generate_all_vs_all_clauses(days, blocks, participants))
-    clauses.extend(generate_non_rep_clauses(days, blocks, participants))
-    clauses.extend(generate_one_per_day_clauses(days, blocks, participants))
-    clauses.extend(generate_non_type_rep_clauses(days, blocks, participants))
