@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 class CNF:
 
     def __init__ (self, name: str, days: int, blocks: int, countP: int):
@@ -23,6 +25,33 @@ class CNF:
         """
         return sign * (1 + local + visit * self.base[1] + day * self.base[2] + block * self.base[3])
 
+    def from_var(self, var: int) -> Tuple:
+        """
+        Given a logical variable (could be negated) we compute the corresponding match
+        """
+        var = abs(var) - 1
+        base = self.base[1]
+
+        local = var % base
+        var //= base
+
+        visit = var % base
+        var //= base
+
+        day = var % base
+        var //= base
+
+        block = var % base
+
+        return (local, visit, day, block)
+
+    def from_vars(self, vars: List[int]) -> List[Tuple]:
+        """
+        Given a list of logical variables (could be negated) we compute the corresponding matches
+        """
+        return [self.from_var(var) for var in vars]
+
+        
     def generate_all_vs_all_clauses(self) -> None:
         """
         Function to generate clauses that specify that two competitors should play at least once,
@@ -131,5 +160,3 @@ class CNF:
             print(f"p cnf {max_var} {len(self.clauses)}", file=f)
             for clause in self.clauses:
                 print(" ".join(clause), end=" 0\n", file=f)
-        
-        

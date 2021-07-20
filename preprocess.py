@@ -4,7 +4,6 @@ from datetime import date, time
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-
 def read_file(filename: str) -> Dict:
     """
     Function to read json file containing problem parameters
