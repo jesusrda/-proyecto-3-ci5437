@@ -77,8 +77,7 @@ class CNF:
                     for d in range(self.days):
                         for b in range(self.blocks):
                             v = self.to_var(-1, i, j, d, b)
-                            for d2 in range(self.days):
-                                if d != d2:
+                            for d2 in range(d+1, self.days):
                                     for b2 in range(self.blocks):
                                         self.clauses.append([v, self.to_var(-1, i, j, d2, b2)])
 
@@ -92,8 +91,7 @@ class CNF:
                     for d in range(self.days):
                         for b in range(self.blocks):
                             v = self.to_var(-1, i, j, d, b)
-                            for j2 in range(self.countP):
-                                if j2 != i:
+                            for j2 in range(i+1, self.countP):
                                     for b2 in range(self.blocks):
                                         if b2 != b:
                                             self.clauses.append([v, self.to_var(-1, i, j2, d, b2)])
@@ -107,7 +105,7 @@ class CNF:
         for i in range(self.countP):
             for j in range(self.countP):
                 if i != j:
-                    for d in range(self.days):
+                    for d in range(self.days-1):
                         for b in range(self.blocks):
                             v = self.to_var(-1, i, j, d, b)
                             for j2 in range(self.countP):
@@ -123,15 +121,16 @@ class CNF:
         """
         Function to generate clauses that specify that not to games can happen at the same time
         """
-        for i in range(self.countP):
-            for j in range(self.countP):
-                if i != j:
-                    for d in range(self.days):
-                        for b in range(self.blocks):
+        for d in range(self.days):
+            for b in range(self.blocks):
+                for i in range(self.countP):
+                    for j in range(self.countP):
+                        if i != j:
                             v = self.to_var(-1, i, j, d, b)
-                            for i2 in range(self.countP):
-                                for j2 in range(self.countP):
-                                    if i != i2 or j != j2:
+                            for i2 in range(i, self.countP):
+                                j2_lb = j+1 if i2 == i else 0
+                                for j2 in range(j2_lb, self.countP):
+                                    if (i != i2 or j != j2) and i2 != j2:
                                         self.clauses.append([v, self.to_var(-1, i2, j2, d, b)])
 
     def build(self):
@@ -139,9 +138,7 @@ class CNF:
         self.clauses = []
 
         maxvar = max(self.days, self.blocks, self.countP) + 1
-        self.base = [1]
-        for i in range(1, 4):
-            self.base.append(self.base[i-1] * maxvar)
+        self.base = [ maxvar ** i for i in range(4) ]
         
         self.generate_all_vs_all_clauses()
         self.generate_non_rep_clauses()
