@@ -1,6 +1,6 @@
 from typing import Tuple, List
 
-class CNF:
+class SAT:
 
     def __init__ (self, name: str, days: int, blocks: int, countP: int):
         """
@@ -22,12 +22,20 @@ class CNF:
         two specific participants, selecting the local and visitant, in a specific day
         and block of the day. The sign will be used to specify if we want the variable
         negated or not
+        :param sign: Indicates if variable is negated (-1) or not (1)
+        :param local: Int representing local participant
+        :param visit: Int representing visitant participant
+        :param day: Int representing match day starting on "start_date"
+        :param block: Int representing day block for the match
+        :returns: SAT variable
         """
         return sign * (1 + local + visit * self.base[1] + day * self.base[2] + block * self.base[3])
 
     def from_var(self, var: int) -> Tuple:
         """
         Given a logical variable (could be negated) we compute the corresponding match
+        :param var: Variable that represents a match
+        :returns: Tuple with elements describing the match
         """
         var = abs(var) - 1
         base = self.base[1]
@@ -48,6 +56,8 @@ class CNF:
     def from_vars(self, vars: List[int]) -> List[Tuple]:
         """
         Given a list of logical variables (could be negated) we compute the corresponding matches
+        :param vars: List of variables to compute corresponding matches
+        :returns: List of tuples describing matches
         """
         return [self.from_var(var) for var in vars]
 
@@ -96,6 +106,11 @@ class CNF:
                                         if b2 != b:
                                             self.clauses.append([v, self.to_var(-1, i, j2, d, b2)])
                                             self.clauses.append([v, self.to_var(-1, j2, i, d, b2)])
+                            for i2 in range(j+1, self.countP):
+                                    for b2 in range(self.blocks):
+                                        if b2 != b:
+                                            self.clauses.append([v, self.to_var(-1, i2, j, d, b2)])
+                                            self.clauses.append([v, self.to_var(-1, j, i2, d, b2)])
 
     def generate_non_type_rep_clauses(self) -> None:
         """
@@ -147,13 +162,15 @@ class CNF:
         self.generate_not_same_time_clauses()
 
     def generate_model(self, filename: str) -> None:
-
+        """
+        Function to create the file that will contain the SAT model of the problem in cnf form
+        :param filename: Path of file to create
+        """
         self.build()
 
         with open(filename, "w") as f:
-            
             print(f"c {self.name}", file=f)
-            max_var = self.to_var(1, self.countP, self.countP, self.days, self.blocks)
-            print(f"p cnf {max_var} {len(self.clauses)}", file=f)
+            max_var = self.to_var(1, self.countP-2, self.countP-1, self.days-1, self.blocks-1)
+            print(f"p cnf {max_var} {len(self.clauses)}", file=f)            
             for clause in self.clauses:
-                print(" ".join(clause), end=" 0\n", file=f)
+                print(" ".join([str(var) for var in clause]), end=" 0\n", file=f)

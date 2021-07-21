@@ -11,7 +11,7 @@ def read_file(filename: str) -> Dict:
     :return: Dictionary containing parameters
     """
     if not Path(filename).exists():
-        raise Exception(f"File {filename} does not exists.")
+        raise Exception(f"file {filename} does not exists.")
     else:
         with open(filename, "r") as f:
             return json.load(f)
@@ -27,7 +27,7 @@ def compute_days(start: date, end: date) -> int:
         raise Exception(f"End date is earlier than start date.")
 
     delta = end - start
-    return delta.days() + 1
+    return delta.days + 1
 
 def compute_blocks(start: time, end: time) -> int:
     """
@@ -36,18 +36,40 @@ def compute_blocks(start: time, end: time) -> int:
     :param end: end time
     :return: number of blocks
     """
+    if start == end and start == time.min:
+        return 12
+
     if end <= start:
         raise Exception("End time is earlier or equal than start time")
 
-
-    actual_start = start.hour + 1 if start.min > 0 else start.hour
-    actual_end = start.hour
-
-    blocks = (end - start) // 2
-    if blocks == 0:
+    
+    blocks = (end.hour - start.hour) // 2
+    if blocks <= 0:
         raise Exception("Non available blocks to use")
     
     return blocks
+
+def preprocess_date_and_time(params: Dict) -> None: 
+    """
+    Function to pars date and time parameters from input
+    :param params: Tournaments parameters
+    """
+    start_date = date.fromisoformat(params["start_date"])
+    end_date = date.fromisoformat(params["end_date"])
+            
+    start_time = time.fromisoformat(params["start_time"])
+    endt_time = time.fromisoformat(params["end_time"])
+    
+    actual_start = time(start_time.hour + 1 if start_time.minute + start_time.second + start_time.microsecond > 0 
+                                            else start_time.hour)
+    actual_end = time(endt_time.hour)
+    
+    params.update({
+        "start_date": start_date,
+        "end_date": end_date,
+        "start_time": actual_start,
+        "end_time": actual_end
+        })
 
 def preprocess_parameters(params: Dict) -> Tuple[str, int, int, List[str]]:
     """
@@ -58,6 +80,7 @@ def preprocess_parameters(params: Dict) -> Tuple[str, int, int, List[str]]:
              tournament
     """
     name = params["tournament_name"]
+    preprocess_date_and_time(params)
     days = compute_days(params["start_date"], params["end_date"])
     blocks = compute_blocks(params["start_time"], params["end_time"])
     participants = params["participants"]
