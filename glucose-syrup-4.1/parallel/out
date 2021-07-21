@@ -1,0 +1,4 @@
+c
+c This is glucose-syrup 4.0 (glucose in many threads) --  based on MiniSAT (Many thanks to MiniSAT team)
+c
+c WARNING: for repeatability, setting FPU to use double precision
