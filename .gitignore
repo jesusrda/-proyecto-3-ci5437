@@ -5,3 +5,4 @@ glucose_static
 glucose-syrup
 glucose-syrup_static
 *.o
+*.or
