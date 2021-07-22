@@ -95,21 +95,27 @@ class SAT:
         """
         for i in range(self.countP):
             for j in range(self.countP):
-                if i != j:
+                if j != i:
                     for d in range(self.days):
                         for b in range(self.blocks):
-                            v = -self.to_var(i, j, d, b)
-                            for b2 in range(self.blocks):
-                                if b2 != b:
-                                    for j2 in range(j+1, self.countP):
-                                        self.clauses.append([v, -self.to_var(i, j2, d, b2)])
-                                        self.clauses.append([v, -self.to_var(j2, i, d, b2)])
-                                    for i2 in range(i+1, self.countP):
-                                        self.clauses.append([v, -self.to_var(i2, j, d, b2)])
-                                        self.clauses.append([v, -self.to_var(j, i2, d, b2)])
-                                    self.clauses.append([v, -self.to_var(j, i, d, b2)])
+                            v_loc = -self.to_var(i, j, d, b)
+                            v_vis = -self.to_var(j, i, d, b)
+                            for b2 in range(b+1, self.blocks):
+                                if i < j:
+                                    # i cant play j two times in the same day in any vis/loc order
+                                    self.clauses.append([v_loc, -self.to_var(i, j, d, b2)])
+                                    self.clauses.append([v_loc, -self.to_var(j, i, d, b2)])
+                                    self.clauses.append([v_vis, -self.to_var(i, j, d, b2)])
+                                    self.clauses.append([v_vis, -self.to_var(j, i, d, b2)])
+                                for k in range(self.countP):
+                                    if j != k and i != k:
+                                        # i cant play vs j and then vs k in any vis/loc order
+                                        self.clauses.append([v_loc, -self.to_var(i, k, d, b2)])
+                                        self.clauses.append([v_loc, -self.to_var(k, i, d, b2)])
+                                        self.clauses.append([v_vis, -self.to_var(k, i, d, b2)])
+                                        self.clauses.append([v_vis, -self.to_var(i, k, d, b2)])
 
-
+    
     def generate_non_type_rep_clauses(self) -> None:
         """
         Function to generate clauses that specify that a participant cannot play two consecutive 
@@ -165,10 +171,10 @@ class SAT:
         :param filename: Path of file to create
         """
         self.build()
-
         with open(filename, "w") as f:
             print(f"c {self.name}", file=f)
-            max_var = self.to_var(self.countP-2, self.countP-1, self.days-1, self.blocks-1)
+            max_var = self.to_var(1, self.countP-2, self.countP-1, self.days-1, self.blocks-1)
             print(f"p cnf {max_var} {len(self.clauses)}", file=f)            
             for clause in self.clauses:
                 print(" ".join([str(var) for var in clause]), end=" 0\n", file=f)
+
