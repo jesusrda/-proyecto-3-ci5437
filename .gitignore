@@ -1,3 +1,7 @@
 venv
 *__pycache__*
 glucose
+glucose_static
+glucose-syrup
+glucose-syrup_static
+*.o
