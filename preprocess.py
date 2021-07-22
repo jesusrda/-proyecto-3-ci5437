@@ -23,9 +23,6 @@ def compute_days(start: date, end: date) -> int:
     :param end: end date
     :return: number of days
     """
-    if end < start:
-        raise Exception(f"End date is earlier than start date.")
-
     delta = end - start
     return delta.days + 1
 
@@ -36,14 +33,8 @@ def compute_blocks(start: time, end: time) -> int:
     :param end: end time
     :return: number of blocks
     """
-    if start == end and start == time.min:
-        return 12
-
-    if end <= start:
-        raise Exception("End time is earlier or equal than start time")
-
-    
-    blocks = (end.hour - start.hour) // 2
+    end_hour = 24 if end == time.min else end.hour
+    blocks = (end_hour - start.hour) // 2
     if blocks <= 0:
         raise Exception("Non available blocks to use")
     
@@ -56,13 +47,22 @@ def preprocess_date_and_time(params: Dict) -> None:
     """
     start_date = date.fromisoformat(params["start_date"])
     end_date = date.fromisoformat(params["end_date"])
+
+    if end_date < start_date:
+        raise Exception(f"End date is earlier than start date.")
             
     start_time = time.fromisoformat(params["start_time"])
-    endt_time = time.fromisoformat(params["end_time"])
+    end_time = time.fromisoformat(params["end_time"])
+
+    if end_time != time.min and end_time <= start_time:
+        raise Exception("End time is earlier or equal than start time")
     
     actual_start = time(start_time.hour + 1 if start_time.minute + start_time.second + start_time.microsecond > 0 
                                             else start_time.hour)
-    actual_end = time(endt_time.hour)
+    actual_end = time(end_time.hour)
+
+    if actual_end == time.min and end_time != time.min:
+        raise Exception("Non available blocks to use")
     
     params.update({
         "start_date": start_date,

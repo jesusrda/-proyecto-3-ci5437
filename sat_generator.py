@@ -173,7 +173,7 @@ class SAT:
         self.build()
         with open(filename, "w") as f:
             print(f"c {self.name}", file=f)
-            max_var = self.to_var(1, self.countP-2, self.countP-1, self.days-1, self.blocks-1)
+            max_var = self.to_var(self.countP-2, self.countP-1, self.days-1, self.blocks-1)
             print(f"p cnf {max_var} {len(self.clauses)}", file=f)            
             for clause in self.clauses:
                 print(" ".join([str(var) for var in clause]), end=" 0\n", file=f)
