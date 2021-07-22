@@ -16,28 +16,26 @@ class SAT:
         self.countP = countP
         self.name = name
 
-    def to_var(self, sign: int, local: int, visit: int, day: int, block: int) -> int:
+    def to_var(self, local: int, visit: int, day: int, block: int) -> int:
         """
         Function to calculate the variable number corresponding to a match between
         two specific participants, selecting the local and visitant, in a specific day
-        and block of the day. The sign will be used to specify if we want the variable
-        negated or not
-        :param sign: Indicates if variable is negated (-1) or not (1)
+        and block of the day. 
         :param local: Int representing local participant
         :param visit: Int representing visitant participant
         :param day: Int representing match day starting on "start_date"
         :param block: Int representing day block for the match
         :returns: SAT variable
         """
-        return sign * (1 + local + visit * self.base[1] + day * self.base[2] + block * self.base[3])
+        return 1 + local + visit * self.base[1] + day * self.base[2] + block * self.base[3]
 
     def from_var(self, var: int) -> Tuple:
         """
-        Given a logical variable (could be negated) we compute the corresponding match
+        Given a logical variable we compute the corresponding match
         :param var: Variable that represents a match
         :returns: Tuple with elements describing the match
         """
-        var = abs(var) - 1
+        var -= 1
         base = self.base[1]
 
         local = var % base
@@ -73,7 +71,7 @@ class SAT:
                     clause = []
                     for d in range(self.days):
                         for b in range(self.blocks):
-                            clause.append(self.to_var(1, i, j, d, b))
+                            clause.append(self.to_var(i, j, d, b))
                     self.clauses.append(clause)
 
     def generate_non_rep_clauses(self) -> None:
@@ -86,10 +84,10 @@ class SAT:
                 if i != j:
                     for d in range(self.days):
                         for b in range(self.blocks):
-                            v = self.to_var(-1, i, j, d, b)
+                            v = -self.to_var(i, j, d, b)
                             for d2 in range(d+1, self.days):
                                     for b2 in range(self.blocks):
-                                        self.clauses.append([v, self.to_var(-1, i, j, d2, b2)])
+                                        self.clauses.append([v, -self.to_var(i, j, d2, b2)])
 
     def generate_one_per_day_clauses(self) -> None:
         """
@@ -100,17 +98,17 @@ class SAT:
                 if i != j:
                     for d in range(self.days):
                         for b in range(self.blocks):
-                            v = self.to_var(-1, i, j, d, b)
-                            for j2 in range(i+1, self.countP):
-                                    for b2 in range(self.blocks):
-                                        if b2 != b:
-                                            self.clauses.append([v, self.to_var(-1, i, j2, d, b2)])
-                                            self.clauses.append([v, self.to_var(-1, j2, i, d, b2)])
-                            for i2 in range(j+1, self.countP):
-                                    for b2 in range(self.blocks):
-                                        if b2 != b:
-                                            self.clauses.append([v, self.to_var(-1, i2, j, d, b2)])
-                                            self.clauses.append([v, self.to_var(-1, j, i2, d, b2)])
+                            v = -self.to_var(i, j, d, b)
+                            for b2 in range(self.blocks):
+                                if b2 != b:
+                                    for j2 in range(j+1, self.countP):
+                                        self.clauses.append([v, -self.to_var(i, j2, d, b2)])
+                                        self.clauses.append([v, -self.to_var(j2, i, d, b2)])
+                                    for i2 in range(i+1, self.countP):
+                                        self.clauses.append([v, -self.to_var(i2, j, d, b2)])
+                                        self.clauses.append([v, -self.to_var(j, i2, d, b2)])
+                                    self.clauses.append([v, -self.to_var(j, i, d, b2)])
+
 
     def generate_non_type_rep_clauses(self) -> None:
         """
@@ -122,15 +120,15 @@ class SAT:
                 if i != j:
                     for d in range(self.days-1):
                         for b in range(self.blocks):
-                            v = self.to_var(-1, i, j, d, b)
+                            v = -self.to_var(i, j, d, b)
                             for j2 in range(self.countP):
                                 if i != j2 and j2 != j:
                                     for b2 in range(self.days):
-                                        self.clauses.append([v, self.to_var(-1, i, j2, d+1, b2)])
+                                        self.clauses.append([v, -self.to_var(i, j2, d+1, b2)])
                             for i2 in range(self.countP):
                                 if i2 != j and i2 != i:
                                     for b2 in range(self.days):
-                                        self.clauses.append([v, self.to_var(-1, i2, j, d+1, b2)])
+                                        self.clauses.append([v, -self.to_var(i2, j, d+1, b2)])
 
     def generate_not_same_time_clauses(self) -> None:
         """
@@ -141,18 +139,18 @@ class SAT:
                 for i in range(self.countP):
                     for j in range(self.countP):
                         if i != j:
-                            v = self.to_var(-1, i, j, d, b)
+                            v = -self.to_var(i, j, d, b)
                             for i2 in range(i, self.countP):
                                 j2_lb = j+1 if i2 == i else 0
                                 for j2 in range(j2_lb, self.countP):
                                     if (i != i2 or j != j2) and i2 != j2:
-                                        self.clauses.append([v, self.to_var(-1, i2, j2, d, b)])
+                                        self.clauses.append([v, -self.to_var(i2, j2, d, b)])
 
     def build(self):
         """ Function to generate all clauses """
         self.clauses = []
 
-        maxvar = max(self.days, self.blocks, self.countP) + 1
+        maxvar = max(self.days, self.blocks, self.countP)
         self.base = [ maxvar ** i for i in range(4) ]
         
         self.generate_all_vs_all_clauses()
@@ -170,7 +168,7 @@ class SAT:
 
         with open(filename, "w") as f:
             print(f"c {self.name}", file=f)
-            max_var = self.to_var(1, self.countP-2, self.countP-1, self.days-1, self.blocks-1)
+            max_var = self.to_var(self.countP-2, self.countP-1, self.days-1, self.blocks-1)
             print(f"p cnf {max_var} {len(self.clauses)}", file=f)            
             for clause in self.clauses:
                 print(" ".join([str(var) for var in clause]), end=" 0\n", file=f)
